@@ -1,0 +1,68 @@
+buildscript {
+	ext {
+		springBootVersion = '1.5.1.RELEASE'
+		herokuRunnerVersion = "8.5.9.0"
+	}
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+	}
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse-wtp'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'war'
+
+war {
+	baseName = 'greenfield'
+	version = '0.0.1-SNAPSHOT'
+}
+
+sourceCompatibility = 1.8
+
+repositories {
+	mavenCentral()
+}
+
+configurations {
+	providedRuntime
+}
+
+
+dependencies {
+	compile('org.springframework.boot:spring-boot-starter-data-jpa')
+	compile('org.flywaydb:flyway-core')
+	compile('org.springframework.boot:spring-boot-starter-web')
+	runtime('org.postgresql:postgresql')
+	compileOnly('org.projectlombok:lombok')
+	providedRuntime('org.springframework.boot:spring-boot-starter-tomcat')
+	testCompile('org.springframework.boot:spring-boot-starter-test')
+
+}
+
+configurations {
+	runtimeOnly
+}
+
+dependencies {
+	// to run our App on Heroku
+	runtimeOnly "com.github.jsimone:webapp-runner:$herokuRunnerVersion"
+	// monitoring on Heroku
+	//runtimeOnly "com.newrelic.agent.java:newrelic-agent:3.+"
+}
+
+
+task copyToLib << {
+	copy {
+		from configurations.runtimeOnly.copy().setTransitive(false)
+		into "$buildDir/libs"
+		rename { name ->
+			def artifacts = configurations.runtimeOnly.resolvedConfiguration.resolvedArtifacts
+			def artifact = artifacts.find { it.file.name == name }
+			"${artifact.name}.${artifact.extension}"
+		}
+	}
+}
